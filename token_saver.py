@@ -1,7 +1,9 @@
 import json
 import os
-import requests
 import time
+import re
+
+import requests
 
 from flask import Flask
 from flask import render_template
@@ -11,7 +13,7 @@ app = Flask(__name__)
 
 CLIENT_ID = 65425
 STRAVA_OUATH= 'http://www.strava.com/oauth'
-STRAVA_API = 'https://www.strava.com/api/v3/'
+STRAVA_API = 'https://www.strava.com/api/v3'
 
 # https://developers.strava.com/docs/authentication/#detailsaboutrequestingaccess
 @app.route('/')
@@ -45,11 +47,16 @@ def exchange_token():
     scope = request.args.get('scope')
     if scope != 'read,activity:read':
         return 'ERROR: Authorization to reading activities is strictly required to participate!'
+    get_access_token('authorization_code', code)
+    # Token saved, load main page
+    return redirect("/", code=302)
+
+def get_access_token(grant_type, code):
     token_exchange_data = {
         'client_id': CLIENT_ID,
-        'code': code,
-        'grant_type': 'authorization_code',
         'client_secret': os.environ['CLIENT_SECRET']
+        'grant_type': grant_type,
+        'code': code,
     }
     # TODO: enable these two lines for live function:
     #resp = requests.post(url=f'{STRAVA_OAUTH}/token', data=token_exchange_data)
@@ -58,7 +65,7 @@ def exchange_token():
     with open('test_samples/token_exchange.json') as f:
         token_data = json.load(f)
     save_access_data(token_data)
-    return 'token saved'
+    return token_data['access_token']
 
 # 'token_data' is in json dictionary format returned by the strava token exchange
 def save_access_data(token_data):
@@ -76,9 +83,61 @@ def save_access_data(token_data):
         f.write(json.dumps(saved_data))
 
 
+# https://www.strava.com/api/v3/activities -H 'Authorization: Bearer YOURACCESSTOKEN'
 @app.route('/athlete')
 def get_user_data():
-#https://www.strava.com/api/v3/activities -H 'Authorization: Bearer d1ccbe9e0ff92b848dd61d1ffe9f7c636b8c0ad2'
-    #requests.get()
+    athlete_id = request.args.get('id')
+    if not athlete_id:
+        return 'ERROR: Athlete ID is required for this operation'
     saved_data = read_saved_data()
-    return 'hah'
+    try:
+        token = saved_data[athlete_id]['access_token']
+    except KeyError:
+        return 'ERROR: User not found'
+    if not token_is_valid(saved_data[athlete_id]):
+        token = refresh_token(saved_data[athlete_id])
+    header = {
+        'Authorization': f'Bearer {token}'
+    }
+    # TODO: enable these two lines for live function:
+    #resp = requests.get(f'{STRAVA_API}/activities', headers=header)
+    #activities = resp.json()
+    # TODO: And remove these two:
+    with open('test_samples/activities.json') as f:
+        activities = json.load(f)
+    sport_data = parse_activities(activities)
+    return render_template('activities.html', activities=sport_data)
+
+# Renew token if it's valid only for less than 30 minutes
+def token_is_valid(athlete_details):
+    remaining_time = athlete_details['expires_at'] - int(time.time())
+    return remaining_time > 1800
+
+# https://developers.strava.com/docs/authentication/#refreshingexpiredaccesstokens
+def refresh_token(athlete_details):
+    return get_access_token('refresh_token', athlete_details['refresh_token'])
+
+
+# TODO: this should be organized in a separate file
+ACTIVE_MONTH = '05'
+allowed_sports = ['Ride', 'Walk', 'Swim', 'Hike', 'Run']
+sport_weights = {
+    'Ride': 1,
+    'Walk': 2,
+    'Hike': 2,
+    'Run': 4,
+    'Swim': 12,
+}
+def parse_activities(activities):
+    summarized = {}
+    for activity in activities:
+        if not activity['start_date_local'].startswith(f'2021-{ACTIVE_MONTH}-'):
+            continue
+        if activity['type'] not in sport_weights.keys():
+            continue
+        summarized['id'] = activity['id']
+        summarized['type'] = activity['type']
+        summarized['distance'] = activity['distance']
+        summarized['start_date'] = activity['start_date_local']
+        summarized['equivalent_distance'] = activity['distance'] * sport_weights[activity['type']]
+    return summarized
