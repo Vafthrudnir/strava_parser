@@ -1,2 +1,26 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<a href={{auth_uri}}>Get authenticator link</a>
+<div>
+	<h2>Register link:</h2>
+	<a href={{auth_uri}}>Get authenticator link</a>
+</div>
+<div>
+	<h2>Users</h2>
+	{% if users == {} %}
+		<p>No registered users found</p>
+	{% else %}
+		<table>
+			<tr>
+				<th>Name</th>
+				<th>Profile link</th>
+				<th>Get competition data</th>
+			</tr>
+			{% for key, value in users.items() %}
+				<tr>
+					<td>{{ value["lastname"] }}, {{ value["firstname"] }}</td>
+					<td><a href="https://www.strava.com/athletes/{{key}}">Link</a></td>
+					<td><a href="/athlete?id={{key}}">Get data</a></td>
+				</tr>
+			{% endfor %}
+		</table>
+	{% endif %}
+</div>

@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import time
 
 from flask import Flask
 from flask import render_template
@@ -9,13 +10,16 @@ from flask import request
 app = Flask(__name__)
 
 CLIENT_ID = 65425
-STRAVA_OUATH='http://www.strava.com/oauth'
+STRAVA_OUATH= 'http://www.strava.com/oauth'
+STRAVA_API = 'https://www.strava.com/api/v3/'
 
 # https://developers.strava.com/docs/authentication/#detailsaboutrequestingaccess
 @app.route('/')
 def main():
     auth_uri = get_auth_uri()
-    return render_template('main.html', auth_uri=auth_uri)
+    users = read_saved_data()
+    print(users)
+    return render_template('main.html', auth_uri=auth_uri, users=users)
 
 def get_auth_uri():
     redirect_uri = 'http://localhost:5000/exchange_token'
@@ -23,6 +27,15 @@ def get_auth_uri():
     prompt = 'force'
     auth_uri = f'{STRAVA_OUATH}/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&approval_prompt={prompt}&scope={scope}'
     return auth_uri
+
+
+def read_saved_data():
+    try:
+        with open('saved_tokens.json') as f:
+            saved_data = json.load(f)
+    except FileNotFoundError:
+        saved_data = {}
+    return saved_data
 
 
 # https://developers.strava.com/docs/authentication/#tokenexchange
@@ -50,11 +63,7 @@ def exchange_token():
 # 'token_data' is in json dictionary format returned by the strava token exchange
 def save_access_data(token_data):
     # Saved data format: {athlete_id: {"expires_at": X, "refresh_token": "XXX", "access_token": "YYY", "firstname": "ZZZ", "lastname:" "AAA"}}
-    try:
-        with open('saved_tokens.json') as f:
-            saved_data = json.load(f)
-    except FileNotFoundError:
-        saved_data = {}
+    saved_data = read_saved_data()
     athlete_id = str(token_data['athlete']['id'])
     saved_data[athlete_id] = {
         'expires_at': token_data['expires_at'],
@@ -66,3 +75,10 @@ def save_access_data(token_data):
     with open('saved_tokens.json', 'w') as f:
         f.write(json.dumps(saved_data))
 
+
+@app.route('/athlete')
+def get_user_data():
+#https://www.strava.com/api/v3/activities -H 'Authorization: Bearer d1ccbe9e0ff92b848dd61d1ffe9f7c636b8c0ad2'
+    #requests.get()
+    saved_data = read_saved_data()
+    return 'hah'
