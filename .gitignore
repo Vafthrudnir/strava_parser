@@ -1,4 +1,5 @@
 client_secret
+tokens.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -24,7 +24,7 @@ def main():
     return render_template('main.html', auth_uri=auth_uri, users=users)
 
 def get_auth_uri():
-    redirect_uri = 'http://localhost:5000/exchange_token'
+    redirect_uri = 'http://szabodevelopment.com/exchange_token'
     scope = 'activity:read'
     prompt = 'force'
     auth_uri = f'{STRAVA_OAUTH}/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&approval_prompt={prompt}&scope={scope}'
