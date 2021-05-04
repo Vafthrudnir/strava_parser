@@ -33,7 +33,7 @@ def get_auth_uri():
 
 def read_saved_data():
     try:
-        with open('saved_tokens.json') as f:
+        with open('save_data/tokens.json') as f:
             saved_data = json.load(f)
     except FileNotFoundError:
         saved_data = {}
@@ -87,7 +87,7 @@ def save_access_data(token_data, athlete_id=None):
     saved_data[athlete_id]['expires_at'] = token_data['expires_at']
     saved_data[athlete_id]['access_token'] = token_data['access_token']
     saved_data[athlete_id]['refresh_token'] = token_data['refresh_token']
-    with open('saved_tokens.json', 'w') as f:
+    with open('save_data/tokens.json', 'w') as f:
         f.write(json.dumps(saved_data))
 
 
