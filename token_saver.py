@@ -9,7 +9,9 @@ from flask import request
 app = Flask(__name__)
 
 CLIENT_ID = 65425
+STRAVA_OUATH='http://www.strava.com/oauth'
 
+# https://developers.strava.com/docs/authentication/#detailsaboutrequestingaccess
 @app.route('/')
 def main():
     auth_uri = get_auth_uri()
@@ -19,10 +21,11 @@ def get_auth_uri():
     redirect_uri = 'http://localhost:5000/exchange_token'
     scope = 'activity:read'
     prompt = 'force'
-    auth_uri = f'http://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&approval_prompt={prompt}&scope={scope}'
+    auth_uri = f'{STRAVA_OUATH}/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&approval_prompt={prompt}&scope={scope}'
     return auth_uri
 
 
+# https://developers.strava.com/docs/authentication/#tokenexchange
 @app.route('/exchange_token')
 def exchange_token():
     code = request.args.get('code')
@@ -36,7 +39,7 @@ def exchange_token():
         'client_secret': os.environ['CLIENT_SECRET']
     }
     # TODO: enable these two lines for live function:
-    #resp = requests.post(url='https://www.strava.com/oauth/token', data=token_exchange_data)
+    #resp = requests.post(url=f'{STRAVA_OAUTH}/token', data=token_exchange_data)
     #token_data = resp.json()
     # TODO: And remove these two:
     with open('test_samples/token_exchange.json') as f:
@@ -52,7 +55,6 @@ def save_access_data(token_data):
             saved_data = json.load(f)
     except FileNotFoundError:
         saved_data = {}
-
     athlete_id = str(token_data['athlete']['id'])
     saved_data[athlete_id] = {
         'expires_at': token_data['expires_at'],
@@ -61,6 +63,6 @@ def save_access_data(token_data):
         'firstname': token_data['athlete']['firstname'],
         'lastname': token_data['athlete']['lastname'],
     }
-
     with open('saved_tokens.json', 'w') as f:
         f.write(json.dumps(saved_data))
+
