@@ -35,12 +35,13 @@ def exchange_token():
         'grant_type': 'authorization_code',
         'client_secret': os.environ['CLIENT_SECRET']
     }
+    # TODO: enable these two lines for live function:
     #resp = requests.post(url='https://www.strava.com/oauth/token', data=token_exchange_data)
     #token_data = resp.json()
-    with open('sample_token_exchange.json') as f:
+    # TODO: And remove these two:
+    with open('test_samples/token_exchange.json') as f:
         token_data = json.load(f)
     save_access_data(token_data)
-
     return 'token saved'
 
 # 'token_data' is in json dictionary format returned by the strava token exchange
