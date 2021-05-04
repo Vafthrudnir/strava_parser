@@ -1,0 +1,29 @@
+{
+    "token_type": "Bearer",
+    "expires_at": 1620159747,
+    "expires_in": 21600,
+    "refresh_token": "3e17d11e4cf058a449fe4b331b6864c139649e5a",
+    "access_token": "d1ccbe9e0ff92b848dd61d1ffe9f7c636b8c0ad2",
+    "athlete": {
+        "id": 63707440,
+        "username": null,
+        "resource_state": 2,
+        "firstname": "David",
+        "lastname": "Szabo",
+        "bio": "",
+        "city": "Budapest",
+        "state": "",
+        "country": "Hungary",
+        "sex": "M",
+        "premium": false,
+        "summit": false,
+        "created_at": "2020-07-13T11:27:42Z",
+        "updated_at": "2021-04-20T10:07:58Z",
+        "badge_type_id": 0,
+        "weight": 120.0,
+        "profile_medium": "https://lh3.googleusercontent.com/a/AATXAJwvvyNu-7TS-NaKMklD1UBgu-mNIbsY0xvxCEjh=s96-c",
+        "profile": "https://lh3.googleusercontent.com/a/AATXAJwvvyNu-7TS-NaKMklD1UBgu-mNIbsY0xvxCEjh=s96-c",
+        "friend": null,
+        "follower": null
+    }
+}
