@@ -8,11 +8,12 @@ import requests
 from flask import Flask
 from flask import render_template
 from flask import request
+from flask import redirect
 
 app = Flask(__name__)
 
 CLIENT_ID = 65425
-STRAVA_OUATH= 'http://www.strava.com/oauth'
+STRAVA_OAUTH= 'http://www.strava.com/oauth'
 STRAVA_API = 'https://www.strava.com/api/v3'
 
 # https://developers.strava.com/docs/authentication/#detailsaboutrequestingaccess
@@ -20,14 +21,13 @@ STRAVA_API = 'https://www.strava.com/api/v3'
 def main():
     auth_uri = get_auth_uri()
     users = read_saved_data()
-    print(users)
     return render_template('main.html', auth_uri=auth_uri, users=users)
 
 def get_auth_uri():
     redirect_uri = 'http://localhost:5000/exchange_token'
     scope = 'activity:read'
     prompt = 'force'
-    auth_uri = f'{STRAVA_OUATH}/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&approval_prompt={prompt}&scope={scope}'
+    auth_uri = f'{STRAVA_OAUTH}/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&approval_prompt={prompt}&scope={scope}'
     return auth_uri
 
 
@@ -51,34 +51,42 @@ def exchange_token():
     # Token saved, load main page
     return redirect("/", code=302)
 
-def get_access_token(grant_type, code):
+def get_access_token(grant_type, code, athlete=None):
     token_exchange_data = {
         'client_id': CLIENT_ID,
-        'client_secret': os.environ['CLIENT_SECRET']
+        'client_secret': os.environ['CLIENT_SECRET'],
         'grant_type': grant_type,
         'code': code,
     }
-    # TODO: enable these two lines for live function:
-    #resp = requests.post(url=f'{STRAVA_OAUTH}/token', data=token_exchange_data)
-    #token_data = resp.json()
-    # TODO: And remove these two:
-    with open('test_samples/token_exchange.json') as f:
-        token_data = json.load(f)
-    save_access_data(token_data)
+    if grant_type == 'authorization_code':
+        token_exchange_data['code'] = code
+    else:
+        token_exchange_data['refresh_token'] = code
+    resp = requests.post(url=f'{STRAVA_OAUTH}/token', data=token_exchange_data)
+    token_data = resp.json()
+    # For offline testing swap the above two lines with these two:
+    #with open('test_samples/token_exchange.json') as f:
+    #    token_data = json.load(f)
+    if athlete:
+        save_access_data(token_data, athlete)
+    else:
+        save_access_data(token_data)
     return token_data['access_token']
 
 # 'token_data' is in json dictionary format returned by the strava token exchange
-def save_access_data(token_data):
+def save_access_data(token_data, athlete_id=None):
     # Saved data format: {athlete_id: {"expires_at": X, "refresh_token": "XXX", "access_token": "YYY", "firstname": "ZZZ", "lastname:" "AAA"}}
     saved_data = read_saved_data()
-    athlete_id = str(token_data['athlete']['id'])
-    saved_data[athlete_id] = {
-        'expires_at': token_data['expires_at'],
-        'access_token': token_data['access_token'],
-        'refresh_token': token_data['refresh_token'],
-        'firstname': token_data['athlete']['firstname'],
-        'lastname': token_data['athlete']['lastname'],
-    }
+    if not athlete_id:
+        athlete_id = str(token_data['athlete']['id'])
+    if athlete_id not in saved_data.keys(): # new entry
+        saved_data[athlete_id] = {
+            'firstname': token_data['athlete']['firstname'],
+            'lastname': token_data['athlete']['lastname'],
+        }
+    saved_data[athlete_id]['expires_at'] = token_data['expires_at']
+    saved_data[athlete_id]['access_token'] = token_data['access_token']
+    saved_data[athlete_id]['refresh_token'] = token_data['refresh_token']
     with open('saved_tokens.json', 'w') as f:
         f.write(json.dumps(saved_data))
 
@@ -95,18 +103,18 @@ def get_user_data():
     except KeyError:
         return 'ERROR: User not found'
     if not token_is_valid(saved_data[athlete_id]):
-        token = refresh_token(saved_data[athlete_id])
+        token = refresh_token(saved_data[athlete_id], athlete_id)
     header = {
         'Authorization': f'Bearer {token}'
     }
-    # TODO: enable these two lines for live function:
-    #resp = requests.get(f'{STRAVA_API}/activities', headers=header)
-    #activities = resp.json()
-    # TODO: And remove these two:
-    with open('test_samples/activities.json') as f:
-        activities = json.load(f)
+    resp = requests.get(f'{STRAVA_API}/activities', headers=header)
+    activities = resp.json()
+    # For offline testing swap the above two lines with these two:
+    #with open('test_samples/activities.json') as f:
+    #    activities = json.load(f)
     sport_data = parse_activities(activities)
-    return render_template('activities.html', activities=sport_data)
+    sum_points = sum([act['equivalent_distance'] for act in sport_data.values()])
+    return render_template('activities.html', activities=sport_data.values(), athlete=saved_data[athlete_id], sum=sum_points)
 
 # Renew token if it's valid only for less than 30 minutes
 def token_is_valid(athlete_details):
@@ -114,8 +122,8 @@ def token_is_valid(athlete_details):
     return remaining_time > 1800
 
 # https://developers.strava.com/docs/authentication/#refreshingexpiredaccesstokens
-def refresh_token(athlete_details):
-    return get_access_token('refresh_token', athlete_details['refresh_token'])
+def refresh_token(athlete_details, athlete_id):
+    return get_access_token('refresh_token', athlete_details['refresh_token'], athlete_id)
 
 
 # TODO: this should be organized in a separate file
@@ -135,9 +143,12 @@ def parse_activities(activities):
             continue
         if activity['type'] not in sport_weights.keys():
             continue
-        summarized['id'] = activity['id']
-        summarized['type'] = activity['type']
-        summarized['distance'] = activity['distance']
-        summarized['start_date'] = activity['start_date_local']
-        summarized['equivalent_distance'] = activity['distance'] * sport_weights[activity['type']]
+        details = {
+            'type': activity['type'],
+            'distance': activity['distance'],
+            'start_date': activity['start_date_local'],
+            'name': activity['name'],
+            'equivalent_distance': int(activity['distance'] * sport_weights[activity['type']]),
+        }
+        summarized[activity['id']] = details
     return summarized
