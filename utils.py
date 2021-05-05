@@ -4,6 +4,8 @@ import time
 
 import requests
 
+import activity_parser
+
 CLIENT_ID = 65425
 STRAVA_OAUTH= 'http://www.strava.com/oauth'
 STRAVA_API = 'https://www.strava.com/api/v3'
@@ -44,11 +46,13 @@ def get_access_token(grant_type, code, athlete=None):
         token_exchange_data['code'] = code
     else:
         token_exchange_data['refresh_token'] = code
-    resp = requests.post(url=f'{STRAVA_OAUTH}/token', data=token_exchange_data)
-    token_data = resp.json()
-    # For offline testing swap the above two lines with these two:
-    #with open('test_samples/token_exchange.json') as f:
-    #    token_data = json.load(f)
+    # Use API only if not in dev mode
+    if os.getenv('FLASK_ENV') != 'development':
+        resp = requests.post(url=f'{STRAVA_OAUTH}/token', data=token_exchange_data)
+        token_data = resp.json()
+    else:
+        with open('test_samples/token_exchange.json') as f:
+            token_data = json.load(f)
     if athlete:
         save_access_data(token_data, athlete)
     else:
@@ -56,7 +60,7 @@ def get_access_token(grant_type, code, athlete=None):
     return token_data['access_token']
 
 
-def read_saved_data():
+def read_saved_tokens():
     try:
         with open('save_data/tokens.json') as f:
             saved_data = json.load(f)
@@ -68,7 +72,7 @@ def read_saved_data():
 # 'token_data' is in json dictionary format returned by the strava token exchange
 def save_access_data(token_data, athlete_id=None):
     # Saved data format: {athlete_id: {"expires_at": X, "refresh_token": "XXX", "access_token": "YYY", "firstname": "ZZZ", "lastname:" "AAA"}}
-    saved_data = read_saved_data()
+    saved_data = read_saved_tokens()
     if not athlete_id:
         athlete_id = str(token_data['athlete']['id'])
     if athlete_id not in saved_data.keys(): # new entry
@@ -83,7 +87,6 @@ def save_access_data(token_data, athlete_id=None):
         f.write(json.dumps(saved_data))
 
 
-
 def get_activities(athlete_details, athlete_id):
     token = athlete_details['access_token']
     if not token_is_valid(athlete_details):
@@ -91,9 +94,44 @@ def get_activities(athlete_details, athlete_id):
     header = {
         'Authorization': f'Bearer {token}'
     }
-    resp = requests.get(f'{STRAVA_API}/activities', headers=header)
-    activities = resp.json()
-    # For offline testing swap the above two lines with these two:
-    #with open('test_samples/activities.json') as f:
-    #    activities = json.load(f)
+    # Use API only if not in dev mode
+    if os.getenv('FLASK_ENV') != 'development':
+        resp = requests.get(f'{STRAVA_API}/activities', headers=header)
+        activities = resp.json()
+    else:
+        with open('test_samples/activities.json') as f:
+            activities = json.load(f)
     return activities
+
+
+def read_teams_data():
+    with open('save_data/teams.json') as f:
+        saved_data = json.load(f)
+    return saved_data
+
+
+def update_teams_data():
+    teams = read_teams_data()
+    token_data = read_saved_tokens()
+    for team, members in teams.items():
+        for member in members:
+            try:
+                activities = get_activities(token_data[member], member)
+            except KeyError:
+                teams[team][member] = ''
+                continue
+            details = activity_parser.parse_activities(activities)
+            summed = activity_parser.sum_points(details)
+            teams[team][member] = str(summed)
+    with open('save_data/teams.json', 'w') as f:
+        f.write(json.dumps(teams))
+
+
+def load_teams():
+    teams = read_teams_data()
+    sorted_teams = []
+    for team, members in teams.items():
+        points = sum([int(dist) if dist else 0 for dist in members.values()])
+        sorted_teams.append((team, members, points))
+    print(sorted_teams)
+    return sorted_teams

@@ -26,3 +26,6 @@ def parse_activities(activities):
         }
         summarized[activity['id']] = details
     return summarized
+
+def sum_points(sport_data):
+	return sum([act['equivalent_distance'] for act in sport_data.values()])

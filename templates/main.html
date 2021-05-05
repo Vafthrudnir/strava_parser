@@ -3,6 +3,27 @@
 	<h2>Register link:</h2>
 	<a href={{auth_uri}}>Get authenticator link</a>
 </div>
+
+<div>
+	<h2>Teams</h2>
+	<table>
+		<tr>
+			<th>Place</th>
+			<th>Team</th>
+			<th>Members</th>
+			<th>Summed km-s</th>
+		</tr>
+		{% for (team, members, points) in teams %}
+			<tr>
+				<td>{{ loop.index }}</td>
+				<td>{{ team }}</td>
+				<td>{{ members.keys() }}</td>
+				<td>{{ points }}</td>
+			</tr>
+		{% endfor %}
+	</table>
+</div>
+
 <div>
 	<h2>Users</h2>
 	{% if users == {} %}
