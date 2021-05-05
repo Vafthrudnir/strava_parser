@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import html
 
 import requests
 
@@ -132,6 +133,6 @@ def load_teams():
     sorted_teams = []
     for team, members in teams.items():
         points = sum([int(dist) if dist else 0 for dist in members.values()])
-        sorted_teams.append((team, members, points))
-    print(sorted_teams)
+        sorted_teams.append((html.unescape(team), members, points))
+    sorted_teams = sorted(sorted_teams, key=lambda item: item[2], reverse=True)
     return sorted_teams
