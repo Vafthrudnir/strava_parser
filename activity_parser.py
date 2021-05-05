@@ -1,12 +1,10 @@
 ACTIVE_MONTH = '05'
 
-allowed_sports = ['Ride', 'Walk', 'Swim', 'Hike', 'Run']
-
 sport_weights = {
     'Ride': 1,
-    'Walk': 2,
-    'Hike': 2,
-    'Run': 4,
+    'Run': 3,
+    'Walk': 6,
+    'Hike': 6,
     'Swim': 12,
 }
 
