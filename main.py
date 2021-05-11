@@ -13,7 +13,8 @@ def main():
     auth_uri = utils.get_auth_uri()
     users = utils.read_saved_tokens()
     teams = utils.load_teams()
-    return render_template('main.html', auth_uri=auth_uri, users=users, teams=teams)
+    timestamp = utils.get_last_update()
+    return render_template('main.html', auth_uri=auth_uri, users=users, teams=teams, last_update=timestamp)
 
 
 # https://developers.strava.com/docs/authentication/#tokenexchange
@@ -52,5 +53,4 @@ def refresh_teams_data():
         return abort(404)
     utils.update_teams_data()
     # Team data updated, return to main page
-    #return redirect("/", code=302)
-    return "Saved."
+    return redirect("/", code=302)

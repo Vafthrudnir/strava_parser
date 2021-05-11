@@ -1,6 +1,7 @@
 refresh_password
 client_secret
 tokens.json
+last_updated.stamp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

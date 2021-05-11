@@ -126,6 +126,9 @@ def update_teams_data():
             teams[team][member] = str(summed)
     with open('save_data/teams.json', 'w') as f:
         f.write(json.dumps(teams))
+    last_updated = str(int(time.time()))
+    with open('save_data/last_updated.stamp', 'w') as f:
+        f.write(last_updated)
 
 
 def load_teams():
@@ -136,3 +139,24 @@ def load_teams():
         sorted_teams.append((html.unescape(team), members, points))
     sorted_teams = sorted(sorted_teams, key=lambda item: item[2], reverse=True)
     return sorted_teams
+
+
+def get_last_update():
+    try:
+        with open('save_data/last_updated.stamp') as f:
+            last_update = int(f.read())
+    except FileNotFoundError:
+        last_update = 0
+    current_time = int(time.time())
+    diff = current_time - last_update
+    days = diff // (60 * 60 * 24)
+    if days:
+        return 'More than a day ago'
+    hours = diff // (60 * 60)
+    if hours:
+        return f'{hours} hour(s) ago'
+    minutes = diff // 60
+    if minutes:
+        return f'{minutes} minute(s) ago'
+    return 'Just now'
+
