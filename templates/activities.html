@@ -1,22 +1,26 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <h2>{{athlete["lastname"]}} {{athlete["firstname"]}}</h2>
-<h3>Sum: {{ sum }}</h3>
-<table>
-	<tr>
-		<th>Type</th>
-		<th>Distance</th>
-		<th>Eq. distance</th>
-		<th>Name</th>
-		<th>Start date</th>
-	</tr>
+<h3>Sum: {{ ((sum|int)/1000)|round(2) }}</h3>
+<table class=styled-table>
+	<thead>
+		<tr>
+			<th>Type</th>
+			<th>Distance</th>
+			<th>Eq. distance</th>
+			<th>Name</th>
+			<th>Start date</th>
+		</tr>
+	</thead>
+	<tbody>
 	{% for activity in activities %}
 		<tr>
-			<td>{{ activity["type"] }}
-			<td>{{ activity["distance"] }}</td>
-			<td>{{ activity["equivalent_distance"] }}</td>
+			<td>{{ activity["type"] }}</td>
+			<td class="value">{{ ((activity["distance"]|int)/1000)|round(2) }} </td>
+			<td class="value">{{ ((activity["equivalent_distance"]|int)/1000)|round(2) }}</td>
 			<td>{{ activity["name"] }}</td>
 			<td>{{ activity["start_date"] }}</td>
 		</tr>
 	{% endfor %}
+	</tbody>
 </table>
 <p><a href="/">Back home</a></p>

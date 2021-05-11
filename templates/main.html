@@ -1,39 +1,40 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <div>
-	<h2>Register link:</h2>
-	<a href={{auth_uri}}>Get authenticator link</a>
-</div>
-
-<div>
 	<h2>Teams</h2>
-	<table>
-		<tr>
-			<th>Place</th>
-			<th>Team</th>
-			<th>Members</th>
-			<th>Summed</th>
-		</tr>
-		{% for (team, members, points) in teams %}
+	<table class="styled-table">
+		<thead>
 			<tr>
-				<td>{{ loop.index }}</td>
-				<td>{{ team }}</td>
-				<td>
-					<table>
-						{% for member, value in members.items() %}
-							<tr>
-							{% if member in users %}
-								<td><a href="https://www.strava.com/athletes/{{member}}">{{ users[member]["lastname"] }}, {{ users[member]["firstname"] }}</a></td>
-								<td><a href="/athlete?id={{member}}">{{ value }}</a></td>
-							{% else %}
-								<td><a href="https://www.strava.com/athletes/{{member}}">Unregistered</a></td>
-								<td>{{ value }}</td>
-							{% endif %}
-							</tr>
-						{% endfor %}
-					</table>
-				</td>
-				<td>{{ points }}</td>
+				<th>Place</th>
+				<th>Team</th>
+				<th>Members</th>
+				<th>Summed</th>
 			</tr>
-		{% endfor %}
+		</thead>
+		<tbody>
+			{% for (team, members, points) in teams %}
+				<tr>
+					<td>{{ loop.index }}</td>
+					<td>{{ team }}</td>
+					<td>
+						<table class="inner-table">
+							<tbody>
+								{% for member, value in members.items() %}
+									<tr>
+									{% if member in users %}
+										<td><a href="https://www.strava.com/athletes/{{member}}">{{ users[member]["firstname"] }} {{ users[member]["lastname"] }}</a></td>
+										<td class="value"><a href="/athlete?id={{member}}">{{ ((value|int)/1000)|round(2) }}</a></td>
+									{% else %}
+										<td><a href="https://www.strava.com/athletes/{{member}}">Unregistered</a></td>
+										<td class="value">{{ value }}</td>
+									{% endif %}
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</td>
+					<td class="value">{{ ((points|int)/1000)|round|int }} km</td>
+				</tr>
+			{% endfor %}
+		</tbody>
 	</table>
 </div>
