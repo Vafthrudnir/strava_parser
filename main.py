@@ -42,6 +42,7 @@ def get_user_data():
         return 'ERROR: User not found.\n<a href="/">Back to home page</a> '
     sport_data = activity_parser.parse_activities(activities)
     sum_points = activity_parser.sum_points(sport_data)
+    utils.update_scores(sum_points, athlete_id)
     return render_template('activities.html', activities=sport_data.values(), athlete=saved_data[athlete_id], sum=sum_points)
 
 

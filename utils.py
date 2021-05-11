@@ -160,3 +160,13 @@ def get_last_update():
         return f'{minutes} minute(s) ago'
     return 'Just now'
 
+
+def update_scores(sum_points, athlete_id):
+    teams = read_teams_data()
+    for team in teams:
+        if athlete_id in teams[team]:
+            teams[team][athlete_id] = str(sum_points)
+            with open('save_data/teams.json', 'w') as f:
+                f.write(json.dumps(teams))
+            break
+    return
