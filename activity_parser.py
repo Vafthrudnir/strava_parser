@@ -1,5 +1,8 @@
 ACTIVE_MONTH = '05'
 
+# Beginning of May
+START_EPOCH = 1619820001
+
 sport_weights = {
     'Ride': 1,
     'Run': 3,

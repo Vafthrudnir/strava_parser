@@ -39,7 +39,9 @@ def get_user_data():
     try:
         activities = utils.get_activities(saved_data[athlete_id], athlete_id)
     except KeyError:
-        return 'ERROR: User not found.\n<a href="/">Back to home page</a> '
+        return 'ERROR: User not found.\n<a href="/">Back to home page</a>'
+    except utils.API_Error:
+        return 'ERROR: Could not connect to STRAVA. The API access limit might be reached, please try again in 15 minutes.'
     sport_data = activity_parser.parse_activities(activities)
     sum_points = activity_parser.sum_points(sport_data)
     utils.update_scores(sum_points, athlete_id)

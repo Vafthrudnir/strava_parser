@@ -87,6 +87,9 @@ def save_access_data(token_data, athlete_id=None):
     with open('save_data/tokens.json', 'w') as f:
         f.write(json.dumps(saved_data))
 
+class API_Error(Exception):
+    pass
+
 
 def get_activities(athlete_details, athlete_id):
     token = athlete_details['access_token']
@@ -97,12 +100,20 @@ def get_activities(athlete_details, athlete_id):
     }
     # Use API only if not in dev mode
     if os.getenv('FLASK_ENV') != 'development':
-        resp = requests.get(f'{STRAVA_API}/activities', headers=header)
-        activities = resp.json()
+        page = 1
+        activities = []
+        while True:
+            resp = requests.get(f'{STRAVA_API}/activities?after={activity_parser.START_EPOCH}&page={page}&per_page=100', headers=header)
+            if resp.status_code != 200:
+                raise API_Error(f'Status code: {resp.status_code}')
+            if resp.content == b'[]':
+                break
+            activities += resp.json()
+            page = page + 1
     else:
         with open('test_samples/activities.json') as f:
             activities = json.load(f)
-    return activities
+    return activities[::-1]
 
 
 def read_teams_data():
@@ -121,6 +132,8 @@ def update_teams_data():
             except KeyError:
                 teams[team][member] = ''
                 continue
+            except API_Error as err:
+                raise err
             details = activity_parser.parse_activities(activities)
             summed = activity_parser.sum_points(details)
             teams[team][member] = str(summed)
