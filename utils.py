@@ -108,7 +108,13 @@ def get_activities(athlete_details, athlete_id):
                 raise API_Error(f'Status code: {resp.status_code}')
             if resp.content == b'[]':
                 break
-            activities += resp.json()
+            activities_on_this_page = resp.json()
+            activities += activities_on_this_page
+            # We request 100 per page, but the API docs say that it's possible it returns fewer than that.
+            # Let's assume though we won't get less than half for it.
+            # This needs to be done to limit the number of API accesses - +1 access for each user is too much.
+            if len(activities_on_this_page) < 50:
+                break
             page = page + 1
     else:
         with open('test_samples/activities.json') as f:
